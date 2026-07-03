@@ -1,0 +1,19 @@
+node_modules
+dist
+build
+.env
+.DS_Store
+coverage
+*.log
+
+# Vite cache
+.vite
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+
