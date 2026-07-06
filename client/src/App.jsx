@@ -131,6 +131,11 @@ function LoginPage({ onAuth }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', fullName: '', favoriteTeam: '' });
+  const [teams, setTeams] = useState([]);
+
+  useEffect(() => {
+    getTeams().then(data => setTeams([...data].sort((a, b) => a.name.localeCompare(b.name))));
+  }, []);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -214,12 +219,16 @@ function LoginPage({ onAuth }) {
                 </div>
                 <div className="field-group">
                   <label className="field-label">Favourite team</label>
-                  <input
+                  <select
                     className="auth-input"
-                    placeholder="e.g. Brazil"
                     value={form.favoriteTeam}
                     onChange={set('favoriteTeam')}
-                  />
+                  >
+                    <option value="">— Select a team —</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
                 </div>
               </>
             )}
