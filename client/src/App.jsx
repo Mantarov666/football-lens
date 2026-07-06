@@ -1037,7 +1037,7 @@ function SettingsPage({ user, onUserChange }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getTeams().then(setTeams);
+    getTeams().then(data => setTeams([...data].sort((a, b) => a.name.localeCompare(b.name))));
   }, []);
 
   const saveTeam = async () => {
