@@ -904,7 +904,7 @@ function AnalysisPage() {
             <span className="muted">Attack vs defense</span>
           </div>
           <div className="team-analysis-list">
-            {(analysis?.teamStats || []).slice(0, 4).map((team) => (
+            {[...(analysis?.teamStats || [])].sort((a, b) => b.points - a.points).slice(0, 4).map((team) => (
               <div className="team-analysis-row" key={team.team}>
                 <TeamBadge name={team.team} />
                 <div className="team-analysis-copy">
