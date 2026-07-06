@@ -101,6 +101,7 @@ function Shell({ user, onLogout, children }) {
           <NavLink to="/analysis">Analysis</NavLink>
           <NavLink to="/matches">Matches</NavLink>
           <NavLink to="/predictions">Predictions</NavLink>
+          {user && <NavLink to="/settings">Settings</NavLink>}
         </nav>
         <div className="sidebar-card">
           {user ? (
@@ -129,7 +130,12 @@ function LoginPage({ onAuth }) {
   const [tab, setTab] = useState('login');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ email: '', password: '', fullName: '' });
+  const [form, setForm] = useState({ email: '', password: '', fullName: '', favoriteTeam: '' });
+  const [teams, setTeams] = useState([]);
+
+  useEffect(() => {
+    getTeams().then(data => setTeams([...data].sort((a, b) => a.name.localeCompare(b.name))));
+  }, []);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -200,16 +206,31 @@ function LoginPage({ onAuth }) {
 
           <form className="auth-form" onSubmit={submit}>
             {tab === 'register' && (
-              <div className="field-group">
-                <label className="field-label">Full name</label>
-                <input
-                  className="auth-input"
-                  placeholder="e.g. Georgi Ivanov"
-                  value={form.fullName}
-                  onChange={set('fullName')}
-                  required
-                />
-              </div>
+              <>
+                <div className="field-group">
+                  <label className="field-label">Full name</label>
+                  <input
+                    className="auth-input"
+                    placeholder="e.g. Georgi Ivanov"
+                    value={form.fullName}
+                    onChange={set('fullName')}
+                    required
+                  />
+                </div>
+                <div className="field-group">
+                  <label className="field-label">Favourite team</label>
+                  <select
+                    className="auth-input"
+                    value={form.favoriteTeam}
+                    onChange={set('favoriteTeam')}
+                  >
+                    <option value="">— Select a team —</option>
+                    {teams.map((t) => (
+                      <option key={t.id} value={t.name}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
             )}
             <div className="field-group">
               <label className="field-label">Email address</label>
@@ -303,12 +324,24 @@ function DashboardPage({ user }) {
   const [dashboard, setDashboard] = useState(null);
   const [teams, setTeams] = useState([]);
   const [overview, setOverview] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
 
   useEffect(() => {
-    getDashboard().then(setDashboard);
+    const teamParam = user?.favoriteTeam ? `?team=${encodeURIComponent(user.favoriteTeam)}` : '';
+    getDashboard(teamParam).then(setDashboard);
     getTeams().then(setTeams);
     getOverview().then(setOverview);
-  }, []);
+    getAnalysis().then(setAnalysis);
+  }, [user?.favoriteTeam]);
+
+  const teamStrengths = useMemo(() => {
+    const fts = dashboard?.favoriteTeamStats;
+    if (!fts || fts.played === 0) return { attack: 74, defense: 61, consistency: 68 };
+    const attack = Math.min(100, Math.round((fts.goalsFor / fts.played) * 20));
+    const defense = Math.max(0, 100 - Math.round((fts.goalsAgainst / fts.played) * 20));
+    const consistency = Math.round((fts.won / fts.played) * 100);
+    return { attack, defense, consistency };
+  }, [dashboard]);
 
   const formData = useMemo(() => {
     const points = dashboard?.standings?.slice(0, 4) || [];
@@ -396,21 +429,15 @@ function DashboardPage({ user }) {
         <div className="card chart-card">
           <div className="card-head">
             <h2>Recent form</h2>
-            <span className="muted">Mock time series</span>
+            <span className="muted">Goals per match</span>
           </div>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={[
-              { day: 'Mon', value: 4 },
-              { day: 'Tue', value: 6 },
-              { day: 'Wed', value: 3 },
-              { day: 'Thu', value: 7 },
-              { day: 'Fri', value: 5 }
-            ]}>
+            <LineChart data={(analysis?.goalsTrend || []).slice(-10)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="day" stroke="#94a3b8" />
+              <XAxis dataKey="match" stroke="#94a3b8" tick={{ fontSize: 10 }} />
               <YAxis stroke="#94a3b8" />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#66e3c4" strokeWidth={3} />
+              <Line type="monotone" dataKey="goals" stroke="#66e3c4" strokeWidth={3} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -442,9 +469,9 @@ function DashboardPage({ user }) {
             </div>
           </div>
           <div className="bars-stack">
-            <ProbabilityBar label="Attack strength" value={74} />
-            <ProbabilityBar label="Defense strength" value={61} />
-            <ProbabilityBar label="Consistency" value={68} />
+            <ProbabilityBar label="Attack strength" value={teamStrengths.attack} />
+            <ProbabilityBar label="Defense strength" value={teamStrengths.defense} />
+            <ProbabilityBar label="Consistency" value={teamStrengths.consistency} />
           </div>
         </div>
 
@@ -454,7 +481,7 @@ function DashboardPage({ user }) {
             <span className="muted">Private section</span>
           </div>
           <p className="lead">
-            Logged users can open Expert Prediction, compare opinions and present a stronger ML story in the exam.
+            Logged users can open Expert Prediction, compare model-based probabilities and access detailed forecast analysis.
           </p>
           <Link className="button button-primary" to="/predictions">Open prediction page</Link>
         </div>
@@ -634,7 +661,7 @@ function AnalysisPage() {
       <section className="grid metrics-grid">
         <MetricCard label="Matches analyzed" value={analysis?.summary?.matchesPlayed ?? 0} note="Only finished games are used" />
         <MetricCard label="Total goals" value={analysis?.summary?.totalGoals ?? 0} note="Sum of home and away scores" />
-        <MetricCard label="Avg goals / match" value={analysis?.summary?.avgGoalsPerMatch ?? 0} note="Useful storytelling metric" />
+        <MetricCard label="Avg goals / match" value={analysis?.summary?.avgGoalsPerMatch ?? 0} note="Average across all finished matches" />
         <MetricCard label="Home wins" value={analysis?.summary?.homeWins ?? 0} note="Outcome distribution" />
       </section>
 
@@ -873,7 +900,7 @@ function AnalysisPage() {
             <span className="muted">Attack vs defense</span>
           </div>
           <div className="team-analysis-list">
-            {(analysis?.teamStats || []).slice(0, 4).map((team) => (
+            {[...(analysis?.teamStats || [])].sort((a, b) => b.points - a.points).slice(0, 4).map((team) => (
               <div className="team-analysis-row" key={team.team}>
                 <TeamBadge name={team.team} />
                 <div className="team-analysis-copy">
@@ -985,12 +1012,12 @@ function PredictionsPage({ user }) {
                     <h3>Expert Prediction</h3>
                     {user ? <span className="muted">Available for logged users</span> : <span className="muted">Login required</span>}
                   </div>
-                  {user && expert ? (
+                  {user && expert?.expertPrediction ? (
                     <div className="expert-content">
-                      <strong>{expert.pick}</strong>
-                      <div className="muted">Analyst: {expert.analyst}</div>
-                      <div className="muted">Confidence: {expert.confidence}%</div>
-                      <p>{expert.note}</p>
+                      <strong>{expert.expertPrediction.pick}</strong>
+                      <div className="muted">Analyst: {expert.expertPrediction.analyst}</div>
+                      <div className="muted">Confidence: {expert.expertPrediction.confidence}%</div>
+                      <p>{expert.expertPrediction.note}</p>
                     </div>
                   ) : (
                     <div className="locked-box">
@@ -1015,7 +1042,7 @@ function SettingsPage({ user, onUserChange }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    getTeams().then(setTeams);
+    getTeams().then(data => setTeams([...data].sort((a, b) => a.name.localeCompare(b.name))));
   }, []);
 
   const saveTeam = async () => {

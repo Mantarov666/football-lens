@@ -44,7 +44,7 @@ export async function getTeams() {
 export async function getMatches() {
   if (!hasRealApiAccess()) return mockMatches;
   try {
-    const data = await cachedFetch("matches", `${config.footballApiBaseUrl}/competitions/WC/matches?limit=30`);
+    const data = await cachedFetch("matches", `${config.footballApiBaseUrl}/competitions/WC/matches?limit=100`);
     return data.matches.map(m => ({
       id: String(m.id),
       homeTeam: m.homeTeam?.name || 'TBD',
@@ -69,7 +69,7 @@ export async function getStats() {
   if (!hasRealApiAccess()) return mockStats;
   try {
     const data = await cachedFetch("stats", `${config.footballApiBaseUrl}/competitions/WC/standings`);
-    const table = data.standings?.[0]?.table || [];
+    const table = (data.standings || []).filter(s => s.type === 'TOTAL').flatMap(group => group.table || []);
     return table.map(row => ({
       teamId: String(row.team.id),
       teamName: row.team.name,

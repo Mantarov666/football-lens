@@ -12,7 +12,7 @@ router.get('/health', (req, res) => {
 });
 
 router.post('/auth/register', async (req, res) => {
-  const { email, password, fullName } = req.body;
+  const { email, password, fullName, favoriteTeam } = req.body;
 
   if (!email || !password || !fullName) {
     return res.status(400).json({ message: 'Missing required fields' });
@@ -23,7 +23,7 @@ router.post('/auth/register', async (req, res) => {
     return res.status(409).json({ message: 'User already exists' });
   }
 
-  const user = await createUser({ email, password, fullName });
+  const user = await createUser({ email, password, fullName, favoriteTeam });
 
   const token = signToken(user);
   return res.status(201).json({
@@ -103,24 +103,45 @@ router.get('/matches', async (req, res) => {
   res.json(matches);
 });
 
+function calcOverview(stats) {
+  const totalPlayed = stats.reduce((sum, t) => sum + t.played, 0);
+  const totalWins   = stats.reduce((sum, t) => sum + t.won, 0);
+  return {
+    matchesPlayed: Math.round(totalPlayed / 2),
+    goalsScored:   stats.reduce((sum, t) => sum + t.goalsFor, 0),
+    cleanSheets:   stats.filter(t => t.goalsAgainst === 0).length,
+    winRate:       totalPlayed > 0 ? Math.round((totalWins / totalPlayed) * 100) : 0
+  };
+}
+
 router.get('/stats/overview', async (req, res) => {
   const stats = await getStats();
-  res.json(stats.overview);
+  res.json(calcOverview(stats));
 });
 
 router.get('/stats/standings', async (req, res) => {
   const stats = await getStats();
-  res.json(stats.standings);
+  res.json(stats);
 });
 
 router.get('/dashboard', async (req, res) => {
   const [teams, matches, stats] = await Promise.all([getTeams(), getMatches(), getStats()]);
+  const { team } = req.query;
+
+  const teamStats = team
+    ? stats.filter(t => t.teamName.toLowerCase() === team.toLowerCase())
+    : [];
+  const overviewStats = teamStats.length > 0 ? teamStats : stats;
 
   res.json({
     teams,
-    recentMatches: matches.slice(0, 3),
-    overview: stats.overview,
-    standings: stats.standings
+    recentMatches: [...matches].filter(m => m.status === 'finished').sort((a, b) => new Date(b.matchDate) - new Date(a.matchDate)).slice(0, 3),
+    overview: calcOverview(overviewStats),
+    favoriteTeamStats: teamStats[0] || null,
+    standings: [...stats].sort((a, b) => b.points - a.points).slice(0, 4).map(t => ({
+      team: t.teamName,
+      points: t.points
+    }))
   });
 });
 

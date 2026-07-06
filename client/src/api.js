@@ -38,8 +38,8 @@ export function register(payload) {
   });
 }
 
-export function getDashboard() {
-  return request('/dashboard');
+export function getDashboard(query = '') {
+  return request(`/dashboard${query}`);
 }
 
 export function getTeams() {
