@@ -323,6 +323,15 @@ function DashboardPage({ user }) {
     getOverview().then(setOverview);
   }, [user?.favoriteTeam]);
 
+  const teamStrengths = useMemo(() => {
+    const fts = dashboard?.favoriteTeamStats;
+    if (!fts || fts.played === 0) return { attack: 74, defense: 61, consistency: 68 };
+    const attack = Math.min(100, Math.round((fts.goalsFor / fts.played) * 20));
+    const defense = Math.max(0, 100 - Math.round((fts.goalsAgainst / fts.played) * 20));
+    const consistency = Math.round((fts.won / fts.played) * 100);
+    return { attack, defense, consistency };
+  }, [dashboard]);
+
   const formData = useMemo(() => {
     const points = dashboard?.standings?.slice(0, 4) || [];
     return points.map((item, index) => ({
@@ -455,9 +464,9 @@ function DashboardPage({ user }) {
             </div>
           </div>
           <div className="bars-stack">
-            <ProbabilityBar label="Attack strength" value={74} />
-            <ProbabilityBar label="Defense strength" value={61} />
-            <ProbabilityBar label="Consistency" value={68} />
+            <ProbabilityBar label="Attack strength" value={teamStrengths.attack} />
+            <ProbabilityBar label="Defense strength" value={teamStrengths.defense} />
+            <ProbabilityBar label="Consistency" value={teamStrengths.consistency} />
           </div>
         </div>
 

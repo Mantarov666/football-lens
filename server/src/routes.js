@@ -137,6 +137,7 @@ router.get('/dashboard', async (req, res) => {
     teams,
     recentMatches: matches.slice(0, 3),
     overview: calcOverview(overviewStats),
+    favoriteTeamStats: teamStats[0] || null,
     standings: [...stats].sort((a, b) => b.points - a.points).slice(0, 4).map(t => ({
       team: t.teamName,
       points: t.points
