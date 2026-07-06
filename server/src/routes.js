@@ -135,7 +135,7 @@ router.get('/dashboard', async (req, res) => {
 
   res.json({
     teams,
-    recentMatches: [...matches].sort((a, b) => new Date(b.matchDate) - new Date(a.matchDate)).slice(0, 3),
+    recentMatches: [...matches].filter(m => m.status === 'finished').sort((a, b) => new Date(b.matchDate) - new Date(a.matchDate)).slice(0, 3),
     overview: calcOverview(overviewStats),
     favoriteTeamStats: teamStats[0] || null,
     standings: [...stats].sort((a, b) => b.points - a.points).slice(0, 4).map(t => ({
