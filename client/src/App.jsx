@@ -324,12 +324,14 @@ function DashboardPage({ user }) {
   const [dashboard, setDashboard] = useState(null);
   const [teams, setTeams] = useState([]);
   const [overview, setOverview] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
 
   useEffect(() => {
     const teamParam = user?.favoriteTeam ? `?team=${encodeURIComponent(user.favoriteTeam)}` : '';
     getDashboard(teamParam).then(setDashboard);
     getTeams().then(setTeams);
     getOverview().then(setOverview);
+    getAnalysis().then(setAnalysis);
   }, [user?.favoriteTeam]);
 
   const teamStrengths = useMemo(() => {
@@ -427,21 +429,15 @@ function DashboardPage({ user }) {
         <div className="card chart-card">
           <div className="card-head">
             <h2>Recent form</h2>
-            <span className="muted">Mock time series</span>
+            <span className="muted">Goals per match</span>
           </div>
           <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={[
-              { day: 'Mon', value: 4 },
-              { day: 'Tue', value: 6 },
-              { day: 'Wed', value: 3 },
-              { day: 'Thu', value: 7 },
-              { day: 'Fri', value: 5 }
-            ]}>
+            <LineChart data={(analysis?.goalsTrend || []).slice(-10)}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="day" stroke="#94a3b8" />
+              <XAxis dataKey="match" stroke="#94a3b8" tick={{ fontSize: 10 }} />
               <YAxis stroke="#94a3b8" />
               <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#66e3c4" strokeWidth={3} />
+              <Line type="monotone" dataKey="goals" stroke="#66e3c4" strokeWidth={3} dot={{ r: 4 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
