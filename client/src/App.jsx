@@ -462,9 +462,9 @@ function DashboardPage({ user }) {
             <span className="muted">Personalized</span>
           </div>
           <div className="featured-team">
-            <TeamBadge name={user?.favoriteTeam || 'FC Barcelona'} />
+            <TeamBadge name={user?.favoriteTeam || ''} />
             <div>
-              <strong>{user?.favoriteTeam || 'FC Barcelona'}</strong>
+              <strong>{user?.favoriteTeam || 'No team selected'}</strong>
               <p className="muted">Your selected team is used for personalization and future saved analytics.</p>
             </div>
           </div>
@@ -1037,7 +1037,7 @@ function PredictionsPage({ user }) {
 
 function SettingsPage({ user, onUserChange }) {
   const [teams, setTeams] = useState([]);
-  const [selectedTeam, setSelectedTeam] = useState(user?.favoriteTeam || 'FC Barcelona');
+  const [selectedTeam, setSelectedTeam] = useState(user?.favoriteTeam || '');
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
 
