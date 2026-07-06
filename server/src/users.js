@@ -24,7 +24,7 @@ async function withDb(action, fallback) {
   }
 }
 
-export async function createUser({ email, password, fullName, favoriteTeam = 'FC Barcelona' }) {
+export async function createUser({ email, password, fullName, favoriteTeam = '' }) {
   const passwordHash = await hashPassword(password);
 
   return withDb(

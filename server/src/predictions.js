@@ -50,7 +50,11 @@ export function getPublicPredictions(matches = [], teamStats = []) {
 
 export function getExpertPredictions(matches = [], teamStats = []) {
   return getPublicPredictions(matches, teamStats).map((prediction) => {
-    const expert = mockExpertPredictions.find((item) => item.matchId === prediction.matchId);
+    const expert = mockExpertPredictions.find(
+      (item) =>
+        prediction.matchLabel === `${item.homeTeam} vs ${item.awayTeam}` ||
+        prediction.matchLabel === `${item.awayTeam} vs ${item.homeTeam}`
+    );
     return {
       ...prediction,
       expertPrediction: expert
