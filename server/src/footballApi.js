@@ -69,7 +69,7 @@ export async function getStats() {
   if (!hasRealApiAccess()) return mockStats;
   try {
     const data = await cachedFetch("stats", `${config.footballApiBaseUrl}/competitions/WC/standings`);
-    const table = data.standings?.[0]?.table || [];
+    const table = (data.standings || []).flatMap(group => group.table || []);
     return table.map(row => ({
       teamId: String(row.team.id),
       teamName: row.team.name,
