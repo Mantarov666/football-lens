@@ -44,7 +44,7 @@ export async function getTeams() {
 export async function getMatches() {
   if (!hasRealApiAccess()) return mockMatches;
   try {
-    const data = await cachedFetch("matches", `${config.footballApiBaseUrl}/competitions/WC/matches?limit=30`);
+    const data = await cachedFetch("matches", `${config.footballApiBaseUrl}/competitions/WC/matches?limit=100`);
     return data.matches.map(m => ({
       id: String(m.id),
       homeTeam: m.homeTeam?.name || 'TBD',
